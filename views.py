@@ -1,17 +1,28 @@
 from tornado import web
 
 from db import execute
-from service import register, login, upload
+from service import register, login, upload, save_user_upload
 
 
 class BaseHandler(web.RequestHandler):
     def get_current_user(self):
-        username = self.get_secure_cookie('current_user')
+        username = self.get_secure_cookie('current_user').decode('utf8')
 
         if not username:
             return None
 
-        return username
+        if not hasattr(self, '_current_user') or self._current_user is None:
+            user_data = execute('SELECT * FROM users WHERE username = :username', username=username)
+
+            if not user_data:
+                return None
+
+            self._current_user = {
+                'id': user_data[0]['id'],
+                'username': user_data[0]['username'],
+            }
+
+        return self._current_user
 
 
 class MainHandler(BaseHandler):
@@ -46,6 +57,8 @@ class LoginHandler(BaseHandler):
         username = self.get_argument('username')
         password = self.get_argument('password')
 
+        self.get_current_user()
+
         try:
             login(username, password)
         except Exception:
@@ -78,7 +91,8 @@ class UploadHandler(BaseHandler):
         file_body = file_info['body']
 
         try:
-            upload(file_body, file_name)
+            path = upload(file_body, file_name)
+            save_user_upload(self.current_user, path)
         except Exception:
             raise
 
@@ -88,8 +102,6 @@ class UploadHandler(BaseHandler):
 class FileHandler(BaseHandler):
     @web.authenticated
     def get(self):
-        files = execute('''SELECT uu.* FROM user_uploads uu
-            JOIN users u ON u.id = uu.user_id
-            WHERE u.username = :current_user''', current_user=self.current_user)
+        files = execute('''SELECT * FROM user_uploads WHERE user_id = :current_user_id''', current_user_id=self.current_user['id'])
 
         self.render('file_list.html', files=files)

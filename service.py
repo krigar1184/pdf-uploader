@@ -46,5 +46,13 @@ def upload(file_body, file_name):
         f.write(file_body)
 
 
+def save_user_upload(user, path):
+    execute(
+        'INSERT INTO user_uploads (user_id, path, dt_uploaded) VALUES (:user_id, :path, :dt_uploaded)', 
+        user_id=user['id'],
+        path=path,
+        dt_uploaded=date.today())
+
+
 def _generate_file_name():
     return str(uuid4())

@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block content %}
+  {% for file in files %}
+  <p>{{ file.path }}</p>
+  {% end %}
+{% end %}

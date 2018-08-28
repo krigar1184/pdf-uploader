@@ -5,7 +5,7 @@
   <body>
     {% if current_user %}
     <div>
-      <p>{{ escape(current_user) }}</p>
+      <p>{{ escape(current_user['username']) }}</p>
       <nav>
         <a href="/file">My uploads</a>
         <a href="/logout">Sign out</a>
